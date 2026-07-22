@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Buyer Finder Agent</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      background: #f1f5f9;
+      color: #1e293b;
+      min-height: 100vh;
+      padding: 2.5rem 1rem 4rem;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    /* ── Header ── */
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    header h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #0f172a;
+      letter-spacing: -0.01em;
+    }
+    header p {
+      margin-top: 0.4rem;
+      color: #64748b;
+      font-size: 0.9rem;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.07), 0 6px 24px rgba(0,0,0,0.06);
+      padding: 2rem;
+    }
+
+    /* ── Form ── */
+    .form-row {
+      display: flex;
+      gap: 0.625rem;
+    }
+    .form-row input[type="url"] {
+      flex: 1;
+      padding: 0.65rem 0.9rem;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      color: #1e293b;
+      outline: none;
+      transition: border-color 0.15s;
+      min-width: 0;
+    }
+    .form-row input[type="url"]:focus { border-color: #3b82f6; }
+    .form-row input[type="url"]:disabled { background: #f8fafc; color: #94a3b8; }
+
+    .btn {
+      padding: 0.65rem 1.25rem;
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.925rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: background 0.15s;
+    }
+    .btn:hover:not(:disabled) { background: #1d4ed8; }
+    .btn:disabled { background: #93c5fd; cursor: not-allowed; }
+
+    .btn-outline {
+      background: #fff;
+      color: #374151;
+      border: 1.5px solid #d1d5db;
+    }
+    .btn-outline:hover:not(:disabled) { background: #f9fafb; border-color: #9ca3af; }
+
+    /* ── Spinner ── */
+    .spinner-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-top: 1.5rem;
+      color: #64748b;
+      font-size: 0.9rem;
+    }
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 2.5px solid #e2e8f0;
+      border-top-color: #3b82f6;
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Error ── */
+    .error-box {
+      margin-top: 1.25rem;
+      padding: 0.875rem 1rem;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      color: #b91c1c;
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+
+    /* ── Results ── */
+    .results { margin-top: 2rem; }
+
+    .company-header { margin-bottom: 1.25rem; }
+    .company-header h2 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .company-header .niche {
+      margin-top: 0.3rem;
+      color: #475569;
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+
+    .stats-line {
+      font-size: 0.825rem;
+      color: #64748b;
+      margin-bottom: 1rem;
+    }
+    .stats-line strong { color: #334155; }
+
+    .download-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+    }
+
+    /* ── Badges ── */
+    .badge {
+      display: inline-block;
+      padding: 0.18em 0.55em;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .green  { background: #dcfce7; color: #15803d; }
+    .yellow { background: #fef9c3; color: #854d0e; }
+    .gray   { background: #f1f5f9; color: #475569; }
+
+    /* ── Table ── */
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+    thead th {
+      background: #f8fafc;
+      padding: 0.65rem 0.875rem;
+      text-align: left;
+      font-weight: 600;
+      color: #64748b;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid #e2e8f0;
+      white-space: nowrap;
+    }
+    tbody tr { border-bottom: 1px solid #f1f5f9; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #f8fafc; }
+    tbody td {
+      padding: 0.7rem 0.875rem;
+      vertical-align: middle;
+    }
+    .firm-name {
+      font-weight: 600;
+      color: #0f172a;
+      white-space: nowrap;
+    }
+    .trunc {
+      display: block;
+      max-width: 200px;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      cursor: default;
+      color: #374151;
+    }
+
+    /* ── Niche advisory ── */
+    .advisory-box {
+      margin-bottom: 1rem;
+      padding: 0.75rem 1rem;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      color: #1e40af;
+      font-size: 0.825rem;
+      line-height: 1.5;
+    }
+    .advisory-box strong { font-weight: 600; }
+
+    .widen-buttons {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-top: 0.625rem;
+    }
+    .btn-widen {
+      padding: 0.35rem 0.75rem;
+      background: #1d4ed8;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+    .btn-widen:hover:not(:disabled) { background: #1e40af; }
+    .btn-widen:disabled { background: #93c5fd; cursor: not-allowed; }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Buyer Finder Agent</h1>
+      <p>Enter a target company URL to identify potential private equity buyers.</p>
+    </header>
+
+    <div class="card">
+      <!-- Input row -->
+      <div class="form-row">
+        <input id="urlInput" type="url" placeholder="https://example.com" autocomplete="off" />
+        <button id="runBtn" class="btn" onclick="startRun()">Find Buyers</button>
+      </div>
+
+      <!-- Spinner -->
+      <div id="spinner" class="spinner-row hidden">
+        <div class="spinner"></div>
+        <span>Researching target and finding buyers — this can take a few minutes&hellip;</span>
+      </div>
+
+      <!-- Error -->
+      <div id="errorBox" class="error-box hidden"></div>
+
+      <!-- Results -->
+      <div id="results" class="results hidden">
+        <div class="company-header">
+          <h2 id="companyName"></h2>
+          <div id="companyNiche" class="niche"></div>
+        </div>
+
+        <div id="statsLine" class="stats-line"></div>
+        <div id="nicheAdvisory" class="advisory-box hidden"></div>
+
+        <div class="download-row">
+          <a id="csvLink" href="#" class="btn btn-outline">&#8595; Download CSV</a>
+          <a id="xlsxLink" href="#" class="btn btn-outline">&#8595; Download Excel</a>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Firm Name</th>
+                <th>Buyer Fit</th>
+                <th>Sector Focus</th>
+                <th>Geography</th>
+                <th>Investment Criteria</th>
+                <th>Relevant Portfolio</th>
+                <th>Rationale</th>
+                <th>Agent Confidence</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const urlInput  = document.getElementById('urlInput');
+    const runBtn    = document.getElementById('runBtn');
+    const spinner   = document.getElementById('spinner');
+    const errorBox  = document.getElementById('errorBox');
+    const resultsEl = document.getElementById('results');
+
+    let currentTargetUrl = null;
+
+    function esc(str) {
+      return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function setLoading(on) {
+      urlInput.disabled = on;
+      runBtn.disabled   = on;
+      spinner.classList.toggle('hidden', !on);
+      document.querySelectorAll('.btn-widen').forEach(btn => { btn.disabled = on; });
+    }
+
+    function showError(msg) {
+      errorBox.innerHTML = esc(msg);
+      errorBox.classList.remove('hidden');
+    }
+
+    function clearUI() {
+      errorBox.classList.add('hidden');
+      resultsEl.classList.add('hidden');
+    }
+
+    function fitBadge(score) {
+      const cls = score === 'Strong' ? 'green' : score === 'Moderate' ? 'yellow' : 'gray';
+      return `<span class="badge ${cls}">${esc(score ?? '—')}</span>`;
+    }
+
+    function confidenceBadge(level) {
+      const cls = level === 'High' ? 'green' : level === 'Medium' ? 'yellow' : 'gray';
+      return `<span class="badge ${cls}">${esc(level ?? '—')}</span>`;
+    }
+
+    function truncCell(text) {
+      const s = text ?? '';
+      return s ? `<span class="trunc" title="${esc(s)}">${esc(s)}</span>` : '—';
+    }
+
+    function basename(p) {
+      return p.split('/').pop();
+    }
+
+    function renderResults(data) {
+      document.getElementById('companyName').textContent  = data.targetProfile.companyName;
+      document.getElementById('companyNiche').textContent = data.targetProfile.niche;
+
+      const strong   = data.buyers.filter(b => b.fit?.fitScore === 'Strong').length;
+      const moderate = data.buyers.filter(b => b.fit?.fitScore === 'Moderate').length;
+      document.getElementById('statsLine').innerHTML =
+        `<strong>${data.stats.uniqueFirms}</strong> unique firms found — ` +
+        `<strong>${strong}</strong> strong fit, <strong>${moderate}</strong> moderate fit · ` +
+        `${data.stats.roundsRun} round(s) · ${esc(data.stats.stopReason)}`;
+
+      const advisory = document.getElementById('nicheAdvisory');
+      if (data.stats.marketSignal === 'possibly niche — consider a wider run') {
+        advisory.innerHTML =
+          `<strong>Low yield signal (${data.stats.yieldRatePct}% yield at URL cap):</strong> ` +
+          `This may be a niche market — relevant buyers may exist beyond what was fetched. ` +
+          `Widen the search to fetch more candidate pages:` +
+          `<div class="widen-buttons">` +
+          `<button class="btn-widen" onclick="widenSearch(25)">+25 URLs (~$0.25–0.35)</button>` +
+          `<button class="btn-widen" onclick="widenSearch(50)">+50 URLs (~$0.45–0.65)</button>` +
+          `<button class="btn-widen" onclick="widenSearch(75)">+75 URLs (~$0.65–0.95)</button>` +
+          `</div>`;
+        advisory.classList.remove('hidden');
+      } else {
+        advisory.classList.add('hidden');
+      }
+
+      document.getElementById('csvLink').href  = `/download/${encodeURIComponent(basename(data.csvPath))}`;
+      document.getElementById('xlsxLink').href = `/download/${encodeURIComponent(basename(data.xlsxPath))}`;
+
+      document.getElementById('tableBody').innerHTML = data.buyers.map(b => `
+        <tr>
+          <td><span class="firm-name">${esc(b.firmName)}</span></td>
+          <td>${fitBadge(b.fit?.fitScore)}</td>
+          <td>${truncCell(b.sectorFocus)}</td>
+          <td>${truncCell(b.geography)}</td>
+          <td>${truncCell(b.investmentCriteria)}</td>
+          <td>${truncCell((b.relevantPortfolio?.relevantCompanies ?? []).join(', ') || 'None identified')}</td>
+          <td>${truncCell(b.rationale?.rationale)}</td>
+          <td>${confidenceBadge(b.confidence?.confidence)}</td>
+        </tr>
+      `).join('');
+
+      resultsEl.classList.remove('hidden');
+    }
+
+    async function startRun() {
+      const targetUrl = urlInput.value.trim();
+      if (!targetUrl) {
+        showError('Please enter a target company URL.');
+        return;
+      }
+
+      clearUI();
+      setLoading(true);
+
+      try {
+        const res  = await fetch('/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ targetUrl }),
+        });
+        const data = await res.json();
+
+        if (res.status === 409) {
+          showError('A run is already in progress. Please wait for it to finish before starting another.');
+          return;
+        }
+        if (!res.ok || !data.success) {
+          showError(data.error ?? 'Something went wrong. Please try again.');
+          return;
+        }
+
+        currentTargetUrl = targetUrl;
+        renderResults(data);
+      } catch {
+        showError('Could not reach the server. Make sure it is running and try again.');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    async function widenSearch(additionalUrls) {
+      if (!currentTargetUrl) return;
+
+      errorBox.classList.add('hidden');
+      setLoading(true);
+
+      try {
+        const res  = await fetch('/widen', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ targetUrl: currentTargetUrl, additionalUrls }),
+        });
+        const data = await res.json();
+
+        if (res.status === 409) {
+          showError('A run is already in progress. Please wait for it to finish.');
+          return;
+        }
+        if (res.status === 404) {
+          showError(
+            'No stored state found for this search. Please re-run the original search first, then widen.'
+          );
+          return;
+        }
+        if (!res.ok || !data.success) {
+          showError(data.error ?? 'Something went wrong during the widen. Please try again.');
+          return;
+        }
+
+        renderResults(data);
+      } catch {
+        showError('Could not reach the server. Make sure it is running and try again.');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    urlInput.addEventListener('keydown', e => { if (e.key === 'Enter') startRun(); });
+  </script>
+</body>
+</html>
