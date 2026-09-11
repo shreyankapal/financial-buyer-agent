@@ -17,6 +17,7 @@ const COLUMNS = [
   { header: "Confidence Reasoning",   key: "confidenceReasoning",   width: 40 },
   { header: "Source URLs",            key: "sourceUrls",            width: 50 },
   { header: "Agent Confidence",       key: "confidence",            width: 18 },
+  { header: "Possible Duplicate",     key: "possibleDuplicate",     width: 35 },
 ];
 
 function flattenBuyer(buyer) {
@@ -33,6 +34,7 @@ function flattenBuyer(buyer) {
     fitNotes:             buyer.fit?.notes ?? "",
     confidenceReasoning:  buyer.confidence?.reasoning ?? "",
     sourceUrls:           (buyer.sourceUrls ?? []).join(", "),
+    possibleDuplicate:    (buyer.possibleDuplicates ?? []).join(", "),
   };
 }
 

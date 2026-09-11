@@ -244,6 +244,21 @@
     .btn-widen:hover:not(:disabled) { background: #1e40af; }
     .btn-widen:disabled { background: #93c5fd; cursor: not-allowed; }
 
+    /* ── Always-visible widen controls ── */
+    .widen-section {
+      margin-top: 1.5rem;
+      padding: 0.875rem 1.1rem;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+    }
+    .widen-section h3 {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 0.5rem;
+    }
+
     .hidden { display: none !important; }
   </style>
 </head>
@@ -301,6 +316,15 @@
             </thead>
             <tbody id="tableBody"></tbody>
           </table>
+        </div>
+
+        <div class="widen-section">
+          <h3>Want more buyers?</h3>
+          <div class="widen-buttons">
+            <button class="btn-widen" onclick="widenSearch(25)">+25 URLs (~$0.25&ndash;0.35)</button>
+            <button class="btn-widen" onclick="widenSearch(50)">+50 URLs (~$0.45&ndash;0.65)</button>
+            <button class="btn-widen" onclick="widenSearch(75)">+75 URLs (~$0.65&ndash;0.95)</button>
+          </div>
         </div>
       </div>
     </div>
@@ -371,12 +395,7 @@
         advisory.innerHTML =
           `<strong>Low yield signal (${data.stats.yieldRatePct}% yield at URL cap):</strong> ` +
           `This may be a niche market — relevant buyers may exist beyond what was fetched. ` +
-          `Widen the search to fetch more candidate pages:` +
-          `<div class="widen-buttons">` +
-          `<button class="btn-widen" onclick="widenSearch(25)">+25 URLs (~$0.25–0.35)</button>` +
-          `<button class="btn-widen" onclick="widenSearch(50)">+50 URLs (~$0.45–0.65)</button>` +
-          `<button class="btn-widen" onclick="widenSearch(75)">+75 URLs (~$0.65–0.95)</button>` +
-          `</div>`;
+          `Consider widening the search using the controls below.`;
         advisory.classList.remove('hidden');
       } else {
         advisory.classList.add('hidden');

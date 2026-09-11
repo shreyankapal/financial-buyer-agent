@@ -39,6 +39,49 @@ for (const [label, buyer] of [
   console.log(`  reasoning:          ${result.reasoning}`);
 }
 
+// ── Self-exclusion fix: Bessemer / ServiceTitan scenario ──
+// ServiceTitan is both a past Bessemer portfolio company AND the acquisition target.
+// It must never appear in relevantCompanies — only genuinely distinct companies should.
+
+console.log("\n\n══ Self-exclusion fix test (Bessemer / ServiceTitan scenario) ══");
+
+const serviceTitanProfile = {
+  companyName: "ServiceTitan",
+  niche: "field service management software for trades contractors",
+  sector: "Construction / Field Service Software",
+  products: ["FSM platform", "scheduling", "dispatching", "invoicing"],
+  customers: "HVAC, plumbing, electrical contractors",
+  searchKeywords: ["field service", "trades", "contractor", "HVAC", "plumbing", "construction software"],
+};
+
+const bessemerBuyer = {
+  firmName: "Bessemer Venture Partners",
+  // Includes "ServiceTitan" and "ServiceTitan Inc." (variant spelling) alongside genuine matches
+  portfolioCompanies: ["ServiceTitan", "ServiceTitan Inc.", "Procore", "Toast", "Intercom"],
+  sectorFocus: "Enterprise software, SaaS, vertical software",
+  fit: { fitScore: "Strong", notes: "" },
+};
+
+console.log(`\nTarget: ${serviceTitanProfile.companyName}`);
+console.log(`Buyer:  ${bessemerBuyer.firmName}`);
+console.log(`Portfolio: ${bessemerBuyer.portfolioCompanies.join(", ")}`);
+
+const bessemerResult = await findRelevantPortfolio(serviceTitanProfile, bessemerBuyer);
+
+console.log(`\n  method:            ${bessemerResult.method}`);
+console.log(`  relevantCompanies: ${bessemerResult.relevantCompanies.join(", ") || "(none)"}`);
+console.log(`  reasoning:         ${bessemerResult.reasoning}`);
+
+const noSelfMatch = !bessemerResult.relevantCompanies.some(
+  (c) => c.toLowerCase().includes("servicetitan")
+);
+const procoreFound = bessemerResult.relevantCompanies.some(
+  (c) => c.toLowerCase().includes("procore")
+);
+
+console.log(`\n  ServiceTitan excluded from results: ${noSelfMatch ? "YES ✓" : "NO ✗"}`);
+console.log(`  Procore appears in results:         ${procoreFound ? "YES ✓" : "NO ✗"}`);
+
 // ── Weak-fit gate fix: Summit Partners / Keyfactor scenario ──
 // Before the fix, a Weak-fit buyer would be skipped entirely by findRelevantPortfolio.
 // After the fix, Pass 1 (keyword) runs regardless of fitScore; only Pass 2 (LLM) is gated.

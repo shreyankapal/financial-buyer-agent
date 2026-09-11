@@ -2,6 +2,7 @@ import "dotenv/config";
 import Anthropic from "@anthropic-ai/sdk";
 import { createHash } from "crypto";
 import { getOrFetch } from "./cache.js";
+import { normalizeForMatch } from "./dedupe.js";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -61,9 +62,28 @@ export async function findRelevantPortfolio(targetProfile, buyer) {
       return { relevantCompanies: [], method: "none", reasoning: "No portfolio companies found" };
     }
 
+    // Filter out the target company itself to avoid circular self-matches.
+    // isSubstringMatch requires wordCount >= 2, which misses single-word names like "ServiceTitan"
+    // appearing as "ServiceTitan Inc." in a portfolio, so we use a direct substring check instead.
+    const normTargetName = normalizeForMatch(targetProfile.companyName ?? "");
+    const filteredPortfolio = normTargetName
+      ? portfolioCompanies.filter((c) => {
+          const normC = normalizeForMatch(c);
+          return (
+            normC !== normTargetName &&
+            !normC.includes(normTargetName) &&
+            !normTargetName.includes(normC)
+          );
+        })
+      : portfolioCompanies;
+
+    if (filteredPortfolio.length === 0) {
+      return { relevantCompanies: [], method: "none", reasoning: "No portfolio companies found after excluding target company" };
+    }
+
     // Pass 1: keyword-based (free) — runs for all buyers with a non-empty portfolio
     const keywords = extractTargetKeywords(targetProfile);
-    const { matched, matchReasons } = keywordMatchPortfolio(keywords, portfolioCompanies);
+    const { matched, matchReasons } = keywordMatchPortfolio(keywords, filteredPortfolio);
 
     if (matched.length > 0) {
       return {
@@ -82,14 +102,14 @@ export async function findRelevantPortfolio(targetProfile, buyer) {
         reasoning: "No keyword match found; LLM pass skipped for Weak-fit buyer",
       };
     }
-    const cacheKey = `relevant-portfolio:${buyer.firmName}:${portfolioHash(portfolioCompanies)}`;
+    const cacheKey = `relevant-portfolio:${buyer.firmName}:${portfolioHash(filteredPortfolio)}`;
 
     const llmResult = await getOrFetch(cacheKey, async () => {
       const prompt =
         `Target company niche: "${targetProfile.niche}"\n` +
         `Target sector: "${targetProfile.sector}"\n\n` +
         `Portfolio companies to evaluate:\n` +
-        portfolioCompanies.map((c, i) => `${i + 1}. ${c}`).join("\n") +
+        filteredPortfolio.map((c, i) => `${i + 1}. ${c}`).join("\n") +
         `\n\nWhich of these portfolio companies (if any) are relevant comparables to the target — ` +
         `similar sector, similar customer base, similar product type, or same broad category? ` +
         `Relevance can be broad (same general industry) or specific (near-identical business). ` +
